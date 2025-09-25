@@ -85,26 +85,65 @@
 
         .timing-section {
             display: flex;
-            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
-        }
-
-        .timing-input {
-            flex: 1;
-            padding: 10px 12px;
-            border: none;
+            padding: 10px;
+            background: #1a1a1a;
             border-radius: 6px;
-            background: #1e1e1e;
-            color: #e0e0e0;
-            font-size: 0.9rem;
-            outline: none;
-            border: 1px solid #333;
-            transition: all 0.3s ease;
         }
 
-        .timing-input:focus {
-            border-color: #00ffff;
-            box-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
+        .reminder-label {
+            font-size: 0.9rem;
+            color: #e0e0e0;
+        }
+
+        /* Toggle Switch Styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: #e0e0e0;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #00ffff;
+            box-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+            background-color: #0a0a0a;
         }
 
         .filters {
@@ -388,7 +427,7 @@
                 font-size: 1.8rem;
             }
             
-            .input-section, .timing-section {
+            .input-section {
                 flex-direction: column;
             }
             
@@ -401,6 +440,11 @@
 <body>
     <div class="container">
         <h1><i class="fas fa-list-check"></i> Taskify</h1>
+        <h5><center>From the factory of TheAPIcalypse</center></h5>
+        <h1>
+
+            
+        </h1>
         
         <div class="input-section">
             <input type="text" id="taskInput" placeholder="Enter a new task...">
@@ -408,8 +452,11 @@
         </div>
         
         <div class="timing-section">
-            <input type="datetime-local" id="taskDueDate" class="timing-input">
-            <input type="time" id="taskReminderTime" class="timing-input" placeholder="Reminder time">
+            <span class="reminder-label">Enable Reminders:</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="reminderToggle">
+                <span class="slider"></span>
+            </label>
         </div>
         
         <div class="filters">
@@ -438,7 +485,7 @@
             
             <!-- Audio element for alarm sound -->
             <audio id="alarmSound" loop>
-                <source src="mixkit-airport-announcement-ding-1569.mp3" type="audio/mpeg">
+                <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg">
                 Your browser does not support the audio element.
             </audio>
             
@@ -454,8 +501,7 @@
             // DOM Elements
             const taskInput = document.getElementById('taskInput');
             const addBtn = document.getElementById('addBtn');
-            const taskDueDate = document.getElementById('taskDueDate');
-            const taskReminderTime = document.getElementById('taskReminderTime');
+            const reminderToggle = document.getElementById('reminderToggle');
             const taskList = document.getElementById('taskList');
             const filterBtns = document.querySelectorAll('.filter-btn');
             const totalTasksSpan = document.getElementById('totalTasks');
@@ -470,28 +516,40 @@
             // Alarm variables
             let currentAlarmTaskId = null;
             let alarmInterval = null;
-            
-            // Set min date/time for due date input
-            const now = new Date();
-            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-            taskDueDate.min = localDateTime;
+            let remindersEnabled = false;
             
             // Current filter
             let currentFilter = 'all';
             
-            // Load tasks from localStorage
+            // Load tasks and settings from localStorage
             let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            const savedSettings = JSON.parse(localStorage.getItem('taskifySettings')) || {};
+            remindersEnabled = savedSettings.remindersEnabled || false;
+            reminderToggle.checked = remindersEnabled;
             
             // Initialize the app
             renderTasks();
             updateStats();
-            startReminderCheck();
+            if (remindersEnabled) {
+                startReminderCheck();
+            }
             
             // Event Listeners
             addBtn.addEventListener('click', addTask);
             taskInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     addTask();
+                }
+            });
+            
+            reminderToggle.addEventListener('change', function() {
+                remindersEnabled = this.checked;
+                saveSettings();
+                
+                if (remindersEnabled) {
+                    startReminderCheck();
+                } else {
+                    stopReminderCheck();
                 }
             });
             
@@ -528,18 +586,13 @@
                     return;
                 }
                 
-                // Get due date and reminder time
-                let dueDate = taskDueDate.value ? new Date(taskDueDate.value).toISOString() : null;
-                let reminderTime = taskReminderTime.value;
-                
                 // Create new task object
                 const newTask = {
                     id: Date.now(),
                     text: taskText,
                     completed: false,
                     createdAt: new Date().toISOString(),
-                    dueDate: dueDate,
-                    reminderTime: reminderTime,
+                    reminderTime: remindersEnabled ? getDefaultReminderTime() : null,
                     reminderTriggered: false
                 };
                 
@@ -549,12 +602,17 @@
                 // Save to localStorage
                 saveTasks();
                 
-                // Clear inputs and re-render
+                // Clear input and re-render
                 taskInput.value = '';
-                taskDueDate.value = '';
-                taskReminderTime.value = '';
                 renderTasks();
                 updateStats();
+            }
+            
+            function getDefaultReminderTime() {
+                // Set reminder for 1 hour from now by default
+                const now = new Date();
+                const reminderTime = new Date(now.getTime() + 60 * 60000); // 1 hour from now
+                return reminderTime.getHours().toString().padStart(2, '0') + ':' + reminderTime.getMinutes().toString().padStart(2, '0');
             }
             
             function toggleTask(id) {
@@ -602,12 +660,23 @@
                 // Find task and toggle reminder
                 tasks = tasks.map(task => {
                     if (task.id === id) {
-                        const newReminderTime = task.reminderTime ? null : prompt('Set reminder time (HH:MM):') || '';
-                        return { 
-                            ...task, 
-                            reminderTime: newReminderTime,
-                            reminderTriggered: false
-                        };
+                        if (task.reminderTime) {
+                            // Remove reminder
+                            return { 
+                                ...task, 
+                                reminderTime: null,
+                                reminderTriggered: false
+                            };
+                        } else {
+                            // Add reminder (1 hour from now)
+                            const now = new Date();
+                            const reminderTime = new Date(now.getTime() + 60 * 60000); // 1 hour from now
+                            return { 
+                                ...task, 
+                                reminderTime: reminderTime.getHours().toString().padStart(2, '0') + ':' + reminderTime.getMinutes().toString().padStart(2, '0'),
+                                reminderTriggered: false
+                            };
+                        }
                     }
                     return task;
                 });
@@ -631,8 +700,7 @@
                     const now = new Date();
                     filteredTasks = tasks.filter(task => 
                         !task.completed && 
-                        task.dueDate && 
-                        new Date(task.dueDate) > now
+                        task.reminderTime
                     );
                 }
                 
@@ -653,18 +721,17 @@
                     const taskItem = document.createElement('li');
                     taskItem.className = `task-item ${task.completed ? 'completed' : ''}`;
                     
-                    // Format due date for display
-                    let dueDateDisplay = '';
-                    if (task.dueDate) {
-                        const dueDate = new Date(task.dueDate);
-                        dueDateDisplay = dueDate.toLocaleDateString() + ' ' + dueDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    // Format reminder time for display
+                    let reminderDisplay = '';
+                    if (task.reminderTime) {
+                        reminderDisplay = `Reminder: ${task.reminderTime}`;
                     }
                     
                     taskItem.innerHTML = `
                         <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
                         <div style="flex: 1;">
                             <span class="task-text">${task.text}</span>
-                            ${task.dueDate ? `<div class="task-timing"><i class="far fa-clock"></i> Due: ${dueDateDisplay}</div>` : ''}
+                            ${task.reminderTime ? `<div class="task-timing"><i class="far fa-clock"></i> ${reminderDisplay}</div>` : ''}
                         </div>
                         <div class="task-actions">
                             <button class="task-action-btn reminder-btn ${task.reminderTime ? 'active' : ''}" title="${task.reminderTime ? 'Reminder set for ' + task.reminderTime : 'Set reminder'}">
@@ -689,7 +756,13 @@
                     
                     checkbox.addEventListener('change', () => toggleTask(task.id));
                     
-                    reminderBtn.addEventListener('click', () => toggleReminder(task.id));
+                    reminderBtn.addEventListener('click', () => {
+                        if (remindersEnabled) {
+                            toggleReminder(task.id);
+                        } else {
+                            alert('Please enable reminders first using the toggle switch above.');
+                        }
+                    });
                     
                     deleteBtn.addEventListener('click', () => deleteTask(task.id));
                     
@@ -708,11 +781,9 @@
             function updateStats() {
                 const total = tasks.length;
                 const completed = tasks.filter(task => task.completed).length;
-                const now = new Date();
                 const upcoming = tasks.filter(task => 
                     !task.completed && 
-                    task.dueDate && 
-                    new Date(task.dueDate) > now
+                    task.reminderTime
                 ).length;
                 
                 totalTasksSpan.textContent = `Total: ${total}`;
@@ -724,9 +795,21 @@
                 localStorage.setItem('tasks', JSON.stringify(tasks));
             }
             
+            function saveSettings() {
+                const settings = {
+                    remindersEnabled: remindersEnabled
+                };
+                localStorage.setItem('taskifySettings', JSON.stringify(settings));
+            }
+            
             function startReminderCheck() {
+                // Clear any existing interval
+                if (alarmInterval) {
+                    clearInterval(alarmInterval);
+                }
+                
                 // Check for reminders every minute
-                setInterval(() => {
+                alarmInterval = setInterval(() => {
                     const now = new Date();
                     const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
                     
@@ -739,6 +822,13 @@
                         }
                     });
                 }, 60000); // Check every minute
+            }
+            
+            function stopReminderCheck() {
+                if (alarmInterval) {
+                    clearInterval(alarmInterval);
+                    alarmInterval = null;
+                }
             }
             
             function triggerAlarm(task) {
