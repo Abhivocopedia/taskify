@@ -529,7 +529,7 @@
             <h2><i class="fas fa-bell"></i> Task Reminder</h2>
             <p id="alarmMessage">It's time for your task!</p>
             
-            <!-- Audio element for alarm sound -->
+            <!-- Audio element for alarm sound with loop enabled -->
             <audio id="alarmSound" loop>
                 <source src="mixkit-airport-announcement-ding-1569.mp3" type="audio/mpeg">
                 Your browser does not support the audio element.
@@ -904,7 +904,8 @@
                 alarmMessage.textContent = `Reminder: ${task.text}`;
                 alarmModal.style.display = 'flex';
                 
-                // Play alarm sound
+                // Play alarm sound with loop enabled
+                alarmSound.loop = true;
                 alarmSound.play().catch(e => {
                     console.log("Audio play failed:", e);
                 });
