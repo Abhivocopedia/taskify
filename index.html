@@ -44,7 +44,7 @@
 
         .input-section {
             display: flex;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             gap: 10px;
         }
 
@@ -83,7 +83,37 @@
             box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
         }
 
-        .timing-section {
+        .datetime-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .datetime-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .datetime-input {
+            padding: 10px 12px;
+            border: none;
+            border-radius: 6px;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            outline: none;
+            border: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+
+        .datetime-input:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
+        }
+
+        .reminder-section {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -427,7 +457,7 @@
                 font-size: 1.8rem;
             }
             
-            .input-section {
+            .input-section, .datetime-section {
                 flex-direction: column;
             }
             
@@ -440,18 +470,21 @@
 <body>
     <div class="container">
         <h1><i class="fas fa-list-check"></i> Taskify</h1>
-        <h5><center>From the factory of TheAPIcalypse</center></h5>
-        <h1>
-
-            
-        </h1>
+        <h5><centre>From the factory of TheAPIcalypse</centre></h5>
         
         <div class="input-section">
             <input type="text" id="taskInput" placeholder="Enter a new task...">
             <button id="addBtn"><i class="fas fa-plus"></i> Add Task</button>
         </div>
         
-        <div class="timing-section">
+        <div class="datetime-section">
+            <div class="datetime-column">
+                <input type="date" id="taskDate" class="datetime-input">
+                <input type="time" id="taskTime" class="datetime-input">
+            </div>
+        </div>
+        
+        <div class="reminder-section">
             <span class="reminder-label">Enable Reminders:</span>
             <label class="toggle-switch">
                 <input type="checkbox" id="reminderToggle">
@@ -501,6 +534,8 @@
             // DOM Elements
             const taskInput = document.getElementById('taskInput');
             const addBtn = document.getElementById('addBtn');
+            const taskDate = document.getElementById('taskDate');
+            const taskTime = document.getElementById('taskTime');
             const reminderToggle = document.getElementById('reminderToggle');
             const taskList = document.getElementById('taskList');
             const filterBtns = document.querySelectorAll('.filter-btn');
@@ -517,6 +552,17 @@
             let currentAlarmTaskId = null;
             let alarmInterval = null;
             let remindersEnabled = false;
+            
+            // Set default date to today
+            const today = new Date();
+            const formattedDate = today.toISOString().split('T')[0];
+            taskDate.value = formattedDate;
+            
+            // Set default time to current time + 1 hour
+            const nextHour = new Date(today.getTime() + 60 * 60000);
+            const formattedTime = nextHour.getHours().toString().padStart(2, '0') + ':' + 
+                                 nextHour.getMinutes().toString().padStart(2, '0');
+            taskTime.value = formattedTime;
             
             // Current filter
             let currentFilter = 'all';
@@ -586,13 +632,23 @@
                     return;
                 }
                 
+                // Get date and time values
+                const selectedDate = taskDate.value;
+                const selectedTime = taskTime.value;
+                
+                // Create reminder datetime if reminders are enabled
+                let reminderDateTime = null;
+                if (remindersEnabled && selectedDate && selectedTime) {
+                    reminderDateTime = new Date(selectedDate + 'T' + selectedTime).toISOString();
+                }
+                
                 // Create new task object
                 const newTask = {
                     id: Date.now(),
                     text: taskText,
                     completed: false,
                     createdAt: new Date().toISOString(),
-                    reminderTime: remindersEnabled ? getDefaultReminderTime() : null,
+                    reminderDateTime: reminderDateTime,
                     reminderTriggered: false
                 };
                 
@@ -602,17 +658,10 @@
                 // Save to localStorage
                 saveTasks();
                 
-                // Clear input and re-render
+                // Clear inputs and re-render
                 taskInput.value = '';
                 renderTasks();
                 updateStats();
-            }
-            
-            function getDefaultReminderTime() {
-                // Set reminder for 1 hour from now by default
-                const now = new Date();
-                const reminderTime = new Date(now.getTime() + 60 * 60000); // 1 hour from now
-                return reminderTime.getHours().toString().padStart(2, '0') + ':' + reminderTime.getMinutes().toString().padStart(2, '0');
             }
             
             function toggleTask(id) {
@@ -660,20 +709,20 @@
                 // Find task and toggle reminder
                 tasks = tasks.map(task => {
                     if (task.id === id) {
-                        if (task.reminderTime) {
+                        if (task.reminderDateTime) {
                             // Remove reminder
                             return { 
                                 ...task, 
-                                reminderTime: null,
+                                reminderDateTime: null,
                                 reminderTriggered: false
                             };
                         } else {
-                            // Add reminder (1 hour from now)
+                            // Set reminder for 1 hour from now
                             const now = new Date();
-                            const reminderTime = new Date(now.getTime() + 60 * 60000); // 1 hour from now
+                            const reminderTime = new Date(now.getTime() + 60 * 60000);
                             return { 
                                 ...task, 
-                                reminderTime: reminderTime.getHours().toString().padStart(2, '0') + ':' + reminderTime.getMinutes().toString().padStart(2, '0'),
+                                reminderDateTime: reminderTime.toISOString(),
                                 reminderTriggered: false
                             };
                         }
@@ -700,7 +749,8 @@
                     const now = new Date();
                     filteredTasks = tasks.filter(task => 
                         !task.completed && 
-                        task.reminderTime
+                        task.reminderDateTime && 
+                        new Date(task.reminderDateTime) > now
                     );
                 }
                 
@@ -721,22 +771,24 @@
                     const taskItem = document.createElement('li');
                     taskItem.className = `task-item ${task.completed ? 'completed' : ''}`;
                     
-                    // Format reminder time for display
+                    // Format reminder datetime for display
                     let reminderDisplay = '';
-                    if (task.reminderTime) {
-                        reminderDisplay = `Reminder: ${task.reminderTime}`;
+                    if (task.reminderDateTime) {
+                        const reminderDate = new Date(task.reminderDateTime);
+                        reminderDisplay = reminderDate.toLocaleDateString() + ' ' + 
+                                         reminderDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     }
                     
                     taskItem.innerHTML = `
                         <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
                         <div style="flex: 1;">
                             <span class="task-text">${task.text}</span>
-                            ${task.reminderTime ? `<div class="task-timing"><i class="far fa-clock"></i> ${reminderDisplay}</div>` : ''}
+                            ${task.reminderDateTime ? `<div class="task-timing"><i class="far fa-clock"></i> Reminder: ${reminderDisplay}</div>` : ''}
                         </div>
                         <div class="task-actions">
-                            <button class="task-action-btn reminder-btn ${task.reminderTime ? 'active' : ''}" title="${task.reminderTime ? 'Reminder set for ' + task.reminderTime : 'Set reminder'}">
+                            <button class="task-action-btn reminder-btn ${task.reminderDateTime ? 'active' : ''}" title="${task.reminderDateTime ? 'Reminder set for ' + reminderDisplay : 'Set reminder'}">
                                 <i class="fas fa-bell"></i>
-                                ${task.reminderTime ? '<span class="reminder-indicator"></span>' : ''}
+                                ${task.reminderDateTime ? '<span class="reminder-indicator"></span>' : ''}
                             </button>
                             <button class="task-action-btn edit-btn" title="Edit task">
                                 <i class="fas fa-edit"></i>
@@ -781,9 +833,11 @@
             function updateStats() {
                 const total = tasks.length;
                 const completed = tasks.filter(task => task.completed).length;
+                const now = new Date();
                 const upcoming = tasks.filter(task => 
                     !task.completed && 
-                    task.reminderTime
+                    task.reminderDateTime && 
+                    new Date(task.reminderDateTime) > now
                 ).length;
                 
                 totalTasksSpan.textContent = `Total: ${total}`;
@@ -811,11 +865,12 @@
                 // Check for reminders every minute
                 alarmInterval = setInterval(() => {
                     const now = new Date();
-                    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
                     
                     tasks.forEach(task => {
-                        if (!task.completed && task.reminderTime && !task.reminderTriggered) {
-                            if (task.reminderTime === currentTime) {
+                        if (!task.completed && task.reminderDateTime && !task.reminderTriggered) {
+                            const reminderTime = new Date(task.reminderDateTime);
+                            // Check if current time is past reminder time
+                            if (now >= reminderTime) {
                                 // Trigger the reminder
                                 triggerAlarm(task);
                             }
@@ -858,13 +913,12 @@
                     // Find the task and set a new reminder for 5 minutes from now
                     const now = new Date();
                     const snoozeTime = new Date(now.getTime() + 5 * 60000); // 5 minutes from now
-                    const snoozeTimeString = snoozeTime.getHours().toString().padStart(2, '0') + ':' + snoozeTime.getMinutes().toString().padStart(2, '0');
                     
                     tasks = tasks.map(task => {
                         if (task.id === currentAlarmTaskId) {
                             return { 
                                 ...task, 
-                                reminderTime: snoozeTimeString,
+                                reminderDateTime: snoozeTime.toISOString(),
                                 reminderTriggered: false
                             };
                         }
