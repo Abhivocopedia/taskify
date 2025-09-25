@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskify</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #121212;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 2.2rem;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+            letter-spacing: 1px;
+        }
+
+        .input-section {
+            display: flex;
+            margin-bottom: 25px;
+            gap: 10px;
+        }
+
+        #taskInput {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 6px;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            font-size: 1rem;
+            outline: none;
+            border: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+
+        #taskInput:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+        }
+
+        #addBtn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #00ffff, #0080ff);
+            border: none;
+            border-radius: 6px;
+            color: #0a0a0a;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        #addBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
+        }
+
+        .timing-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .timing-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: none;
+            border-radius: 6px;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            outline: none;
+            border: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+
+        .timing-input:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
+        }
+
+        .filters {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: #1a1a1a;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .filter-btn {
+            padding: 8px 15px;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .filter-btn.active {
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+        }
+
+        .filter-btn:hover:not(.active) {
+            color: #e0e0e0;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .task-list {
+            list-style-type: none;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .task-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .task-list::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 3px;
+        }
+
+        .task-list::-webkit-scrollbar-thumb {
+            background: #00ffff;
+            border-radius: 3px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: #1a1a1a;
+            border-radius: 6px;
+            border-left: 3px solid #333;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .task-item:hover {
+            transform: translateX(5px);
+            border-left-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+
+        .task-item.completed {
+            opacity: 0.7;
+            border-left-color: #00ff80;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .task-checkbox {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #00ff80;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 1rem;
+            word-break: break-word;
+        }
+
+        .task-timing {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .task-action-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #888;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .edit-btn:hover {
+            color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+            text-shadow: 0 0 5px rgba(255, 170, 0, 0.5);
+        }
+
+        .delete-btn:hover {
+            color: #ff5555;
+            background: rgba(255, 85, 85, 0.1);
+            text-shadow: 0 0 5px rgba(255, 85, 85, 0.5);
+        }
+
+        .reminder-btn {
+            position: relative;
+        }
+
+        .reminder-btn.active {
+            color: #ffaa00;
+            text-shadow: 0 0 5px rgba(255, 170, 0, 0.5);
+        }
+
+        .reminder-btn:hover {
+            color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+            text-shadow: 0 0 5px rgba(255, 170, 0, 0.5);
+        }
+
+        .reminder-indicator {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 6px;
+            height: 6px;
+            background: #ff5555;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px 0;
+            color: #555;
+            font-style: italic;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .alarm-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .alarm-content {
+            background: #121212;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            animation: alarmPulse 1s infinite;
+        }
+
+        @keyframes alarmPulse {
+            0% { box-shadow: 0 0 30px rgba(0, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(0, 255, 255, 0.6); }
+            100% { box-shadow: 0 0 30px rgba(0, 255, 255, 0.3); }
+        }
+
+        .alarm-content h2 {
+            color: #00ffff;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+
+        .alarm-content p {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        #dismissAlarm {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #00ffff, #0080ff);
+            border: none;
+            border-radius: 6px;
+            color: #0a0a0a;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        #dismissAlarm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
+        }
+
+        .audio-controls {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .audio-btn {
+            padding: 8px 15px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #00ffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .audio-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .input-section, .timing-section {
+                flex-direction: column;
+            }
+            
+            #addBtn {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-list-check"></i> Taskify</h1>
+        
+        <div class="input-section">
+            <input type="text" id="taskInput" placeholder="Enter a new task...">
+            <button id="addBtn"><i class="fas fa-plus"></i> Add Task</button>
+        </div>
+        
+        <div class="timing-section">
+            <input type="datetime-local" id="taskDueDate" class="timing-input">
+            <input type="time" id="taskReminderTime" class="timing-input" placeholder="Reminder time">
+        </div>
+        
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="active">Active</button>
+            <button class="filter-btn" data-filter="completed">Completed</button>
+            <button class="filter-btn" data-filter="upcoming">Upcoming</button>
+        </div>
+        
+        <ul class="task-list" id="taskList">
+            <!-- Tasks will be added here dynamically -->
+        </ul>
+        
+        <div class="stats">
+            <span id="totalTasks">Total: 0</span>
+            <span id="completedTasks">Completed: 0</span>
+            <span id="upcomingTasks">Upcoming: 0</span>
+        </div>
+    </div>
+
+    <!-- Alarm Modal -->
+    <div class="alarm-modal" id="alarmModal">
+        <div class="alarm-content">
+            <h2><i class="fas fa-bell"></i> Task Reminder</h2>
+            <p id="alarmMessage">It's time for your task!</p>
+            
+            <!-- Audio element for alarm sound -->
+            <audio id="alarmSound" loop>
+                <source src="mixkit-airport-announcement-ding-1569.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+            
+            <div class="audio-controls">
+                <button id="dismissAlarm">Dismiss Alarm</button>
+                <button id="snoozeAlarm" class="audio-btn">Snooze (5 min)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const taskInput = document.getElementById('taskInput');
+            const addBtn = document.getElementById('addBtn');
+            const taskDueDate = document.getElementById('taskDueDate');
+            const taskReminderTime = document.getElementById('taskReminderTime');
+            const taskList = document.getElementById('taskList');
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const totalTasksSpan = document.getElementById('totalTasks');
+            const completedTasksSpan = document.getElementById('completedTasks');
+            const upcomingTasksSpan = document.getElementById('upcomingTasks');
+            const alarmModal = document.getElementById('alarmModal');
+            const alarmMessage = document.getElementById('alarmMessage');
+            const dismissAlarm = document.getElementById('dismissAlarm');
+            const snoozeAlarm = document.getElementById('snoozeAlarm');
+            const alarmSound = document.getElementById('alarmSound');
+            
+            // Alarm variables
+            let currentAlarmTaskId = null;
+            let alarmInterval = null;
+            
+            // Set min date/time for due date input
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            taskDueDate.min = localDateTime;
+            
+            // Current filter
+            let currentFilter = 'all';
+            
+            // Load tasks from localStorage
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            
+            // Initialize the app
+            renderTasks();
+            updateStats();
+            startReminderCheck();
+            
+            // Event Listeners
+            addBtn.addEventListener('click', addTask);
+            taskInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addTask();
+                }
+            });
+            
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active filter button
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Set current filter and re-render
+                    currentFilter = this.getAttribute('data-filter');
+                    renderTasks();
+                });
+            });
+            
+            dismissAlarm.addEventListener('click', function() {
+                stopAlarm();
+            });
+            
+            snoozeAlarm.addEventListener('click', function() {
+                snoozeAlarmFunction();
+            });
+            
+            // Functions
+            function addTask() {
+                const taskText = taskInput.value.trim();
+                
+                if (taskText === '') {
+                    // Add shake animation to input
+                    taskInput.style.animation = 'shake 0.5s';
+                    setTimeout(() => {
+                        taskInput.style.animation = '';
+                    }, 500);
+                    return;
+                }
+                
+                // Get due date and reminder time
+                let dueDate = taskDueDate.value ? new Date(taskDueDate.value).toISOString() : null;
+                let reminderTime = taskReminderTime.value;
+                
+                // Create new task object
+                const newTask = {
+                    id: Date.now(),
+                    text: taskText,
+                    completed: false,
+                    createdAt: new Date().toISOString(),
+                    dueDate: dueDate,
+                    reminderTime: reminderTime,
+                    reminderTriggered: false
+                };
+                
+                // Add to tasks array
+                tasks.push(newTask);
+                
+                // Save to localStorage
+                saveTasks();
+                
+                // Clear inputs and re-render
+                taskInput.value = '';
+                taskDueDate.value = '';
+                taskReminderTime.value = '';
+                renderTasks();
+                updateStats();
+            }
+            
+            function toggleTask(id) {
+                // Find task and toggle completed status
+                tasks = tasks.map(task => {
+                    if (task.id === id) {
+                        return { ...task, completed: !task.completed };
+                    }
+                    return task;
+                });
+                
+                // Save and re-render
+                saveTasks();
+                renderTasks();
+                updateStats();
+            }
+            
+            function editTask(id, newText) {
+                if (newText.trim() === '') return;
+                
+                // Find task and update text
+                tasks = tasks.map(task => {
+                    if (task.id === id) {
+                        return { ...task, text: newText.trim() };
+                    }
+                    return task;
+                });
+                
+                // Save and re-render
+                saveTasks();
+                renderTasks();
+            }
+            
+            function deleteTask(id) {
+                // Remove task from array
+                tasks = tasks.filter(task => task.id !== id);
+                
+                // Save and re-render
+                saveTasks();
+                renderTasks();
+                updateStats();
+            }
+            
+            function toggleReminder(id) {
+                // Find task and toggle reminder
+                tasks = tasks.map(task => {
+                    if (task.id === id) {
+                        const newReminderTime = task.reminderTime ? null : prompt('Set reminder time (HH:MM):') || '';
+                        return { 
+                            ...task, 
+                            reminderTime: newReminderTime,
+                            reminderTriggered: false
+                        };
+                    }
+                    return task;
+                });
+                
+                // Save and re-render
+                saveTasks();
+                renderTasks();
+            }
+            
+            function renderTasks() {
+                // Clear the task list
+                taskList.innerHTML = '';
+                
+                // Filter tasks based on current filter
+                let filteredTasks = tasks;
+                if (currentFilter === 'active') {
+                    filteredTasks = tasks.filter(task => !task.completed);
+                } else if (currentFilter === 'completed') {
+                    filteredTasks = tasks.filter(task => task.completed);
+                } else if (currentFilter === 'upcoming') {
+                    const now = new Date();
+                    filteredTasks = tasks.filter(task => 
+                        !task.completed && 
+                        task.dueDate && 
+                        new Date(task.dueDate) > now
+                    );
+                }
+                
+                // Show empty state if no tasks
+                if (filteredTasks.length === 0) {
+                    const emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state';
+                    emptyState.innerHTML = `
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>No ${currentFilter !== 'all' ? currentFilter : ''} tasks found</p>
+                    `;
+                    taskList.appendChild(emptyState);
+                    return;
+                }
+                
+                // Create task items
+                filteredTasks.forEach(task => {
+                    const taskItem = document.createElement('li');
+                    taskItem.className = `task-item ${task.completed ? 'completed' : ''}`;
+                    
+                    // Format due date for display
+                    let dueDateDisplay = '';
+                    if (task.dueDate) {
+                        const dueDate = new Date(task.dueDate);
+                        dueDateDisplay = dueDate.toLocaleDateString() + ' ' + dueDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    }
+                    
+                    taskItem.innerHTML = `
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
+                        <div style="flex: 1;">
+                            <span class="task-text">${task.text}</span>
+                            ${task.dueDate ? `<div class="task-timing"><i class="far fa-clock"></i> Due: ${dueDateDisplay}</div>` : ''}
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action-btn reminder-btn ${task.reminderTime ? 'active' : ''}" title="${task.reminderTime ? 'Reminder set for ' + task.reminderTime : 'Set reminder'}">
+                                <i class="fas fa-bell"></i>
+                                ${task.reminderTime ? '<span class="reminder-indicator"></span>' : ''}
+                            </button>
+                            <button class="task-action-btn edit-btn" title="Edit task">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="task-action-btn delete-btn" title="Delete task">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Add event listeners to the task item
+                    const checkbox = taskItem.querySelector('.task-checkbox');
+                    const reminderBtn = taskItem.querySelector('.reminder-btn');
+                    const editBtn = taskItem.querySelector('.edit-btn');
+                    const deleteBtn = taskItem.querySelector('.delete-btn');
+                    const taskText = taskItem.querySelector('.task-text');
+                    
+                    checkbox.addEventListener('change', () => toggleTask(task.id));
+                    
+                    reminderBtn.addEventListener('click', () => toggleReminder(task.id));
+                    
+                    deleteBtn.addEventListener('click', () => deleteTask(task.id));
+                    
+                    editBtn.addEventListener('click', () => {
+                        const currentText = taskText.textContent;
+                        const newText = prompt('Edit your task:', currentText);
+                        if (newText !== null) {
+                            editTask(task.id, newText);
+                        }
+                    });
+                    
+                    taskList.appendChild(taskItem);
+                });
+            }
+            
+            function updateStats() {
+                const total = tasks.length;
+                const completed = tasks.filter(task => task.completed).length;
+                const now = new Date();
+                const upcoming = tasks.filter(task => 
+                    !task.completed && 
+                    task.dueDate && 
+                    new Date(task.dueDate) > now
+                ).length;
+                
+                totalTasksSpan.textContent = `Total: ${total}`;
+                completedTasksSpan.textContent = `Completed: ${completed}`;
+                upcomingTasksSpan.textContent = `Upcoming: ${upcoming}`;
+            }
+            
+            function saveTasks() {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+            
+            function startReminderCheck() {
+                // Check for reminders every minute
+                setInterval(() => {
+                    const now = new Date();
+                    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                    
+                    tasks.forEach(task => {
+                        if (!task.completed && task.reminderTime && !task.reminderTriggered) {
+                            if (task.reminderTime === currentTime) {
+                                // Trigger the reminder
+                                triggerAlarm(task);
+                            }
+                        }
+                    });
+                }, 60000); // Check every minute
+            }
+            
+            function triggerAlarm(task) {
+                currentAlarmTaskId = task.id;
+                alarmMessage.textContent = `Reminder: ${task.text}`;
+                alarmModal.style.display = 'flex';
+                
+                // Play alarm sound
+                alarmSound.play().catch(e => {
+                    console.log("Audio play failed:", e);
+                });
+                
+                // Mark reminder as triggered
+                task.reminderTriggered = true;
+                saveTasks();
+            }
+            
+            function stopAlarm() {
+                alarmModal.style.display = 'none';
+                alarmSound.pause();
+                alarmSound.currentTime = 0;
+                currentAlarmTaskId = null;
+            }
+            
+            function snoozeAlarmFunction() {
+                if (currentAlarmTaskId) {
+                    // Find the task and set a new reminder for 5 minutes from now
+                    const now = new Date();
+                    const snoozeTime = new Date(now.getTime() + 5 * 60000); // 5 minutes from now
+                    const snoozeTimeString = snoozeTime.getHours().toString().padStart(2, '0') + ':' + snoozeTime.getMinutes().toString().padStart(2, '0');
+                    
+                    tasks = tasks.map(task => {
+                        if (task.id === currentAlarmTaskId) {
+                            return { 
+                                ...task, 
+                                reminderTime: snoozeTimeString,
+                                reminderTriggered: false
+                            };
+                        }
+                        return task;
+                    });
+                    
+                    saveTasks();
+                    stopAlarm();
+                    renderTasks();
+                }
+            }
+            
+            // Add CSS for shake animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                    20%, 40%, 60%, 80% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+</body>
+</html>
